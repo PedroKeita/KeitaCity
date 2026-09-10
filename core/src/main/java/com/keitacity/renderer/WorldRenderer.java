@@ -4,6 +4,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.keitacity.entity.Building;
 import com.keitacity.entity.Citizen;
@@ -13,62 +16,110 @@ import com.keitacity.world.World;
 public class WorldRenderer {
 
     private final World world;
-    private final ShapeRenderer shapeRenderer;
     private final OrthographicCamera camera;
+    private final SpriteBatch batch;
+    private final ShapeRenderer shapeRenderer;
 
-    private static final int TILE_SIZE = 32;
+    private final Texture predioTex;
+    private final Texture cidadaoTex;
+    private final Texture estradaTex;
+
+    private static final int TILE_SIZE = 64;
+    private static final Color BG_COLOR = new Color(0.44f, 0.44f, 0.44f, 1f); // cinza do MagicaVoxel
 
     public WorldRenderer(World world, OrthographicCamera camera) {
         this.world = world;
         this.camera = camera;
+        this.batch = new SpriteBatch();
         this.shapeRenderer = new ShapeRenderer();
+
+        predioTex  = loadWithColorKey("sprites/predio.png");
+        cidadaoTex = loadWithColorKey("sprites/cidadao.png");
+        estradaTex = loadWithColorKey("sprites/estrada.png");
     }
 
-    public void render() {
-        Gdx.gl.glClearColor(0.15f, 0.15f, 0.15f, 1f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    // remove o fundo cinza do MagicaVoxel tornando-o transparente
+    private Texture loadWithColorKey(String path) {
+        Pixmap raw = new Pixmap(Gdx.files.internal(path));
+        Pixmap out = new Pixmap(raw.getWidth(), raw.getHeight(), Pixmap.Format.RGBA8888);
 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        int bgR = 112, bgG = 112, bgB = 112; // RGB do cinza #707070
+        int threshold = 30; // tolerância para variações de sombra
 
-        // grid
-        Grid grid = world.grid;
-        for (int x = 0; x < grid.width; x++) {
-            for (int y = 0; y < grid.height; y++) {
-                if ((x + y) % 2 == 0) {
-                    shapeRenderer.setColor(Color.FOREST);
+        for (int x = 0; x < raw.getWidth(); x++) {
+            for (int y = 0; y < raw.getHeight(); y++) {
+                int pixel = raw.getPixel(x, y);
+                int r = (pixel >> 24) & 0xFF;
+                int g = (pixel >> 16) & 0xFF;
+                int b = (pixel >> 8)  & 0xFF;
+
+                boolean isBg = Math.abs(r - bgR) < threshold &&
+                               Math.abs(g - bgG) < threshold &&
+                               Math.abs(b - bgB) < threshold;
+
+                if (isBg) {
+                    out.drawPixel(x, y, 0x00000000); // transparente
                 } else {
-                    shapeRenderer.setColor(Color.OLIVE);
+                    out.drawPixel(x, y, pixel);
                 }
-                shapeRenderer.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE - 1, TILE_SIZE - 1);
             }
         }
 
-        // prédios
-        shapeRenderer.setColor(Color.GRAY);
+        Texture tex = new Texture(out);
+        raw.dispose();
+        out.dispose();
+        return tex;
+    }
+
+    public void render() {
+        Gdx.gl.glClearColor(0.2f, 0.5f, 0.2f, 1f); // fundo verde (grama)
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        Grid grid = world.grid;
+
+        // desenha estrada em todos os tiles
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
+        for (int x = 0; x < grid.width; x++) {
+            for (int y = 0; y < grid.height; y++) {
+                batch.draw(estradaTex,
+                    x * TILE_SIZE,
+                    y * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE
+                );
+            }
+        }
+
+        // desenha prédios
         for (Building b : world.buildings) {
-            shapeRenderer.rect(
-                b.x * TILE_SIZE + 2,
-                b.y * TILE_SIZE + 2,
-                TILE_SIZE - 4,
-                TILE_SIZE - 4
+            batch.draw(predioTex,
+                b.x * TILE_SIZE,
+                b.y * TILE_SIZE,
+                TILE_SIZE,
+                TILE_SIZE
             );
         }
 
-        // cidadãos
-        shapeRenderer.setColor(Color.RED);
+        // desenha cidadãos
         for (Citizen c : world.citizens) {
-            shapeRenderer.circle(
-                c.x * TILE_SIZE + TILE_SIZE / 2f,
-                c.y * TILE_SIZE + TILE_SIZE / 2f,
-                TILE_SIZE / 3f
+            batch.draw(cidadaoTex,
+                c.x * TILE_SIZE,
+                c.y * TILE_SIZE,
+                TILE_SIZE,
+                TILE_SIZE
             );
         }
 
-        shapeRenderer.end();
+        batch.end();
     }
 
     public void dispose() {
+        batch.dispose();
         shapeRenderer.dispose();
+        predioTex.dispose();
+        cidadaoTex.dispose();
+        estradaTex.dispose();
     }
 }

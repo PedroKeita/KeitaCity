@@ -18,7 +18,7 @@ public class KeitaCity extends ApplicationAdapter {
     private static final float ZOOM_SPEED = 0.1f;
     private static final float MIN_ZOOM = 0.3f;
     private static final float MAX_ZOOM = 3f;
-    private static final int TILE_SIZE = 32;
+    private static final int TILE_SIZE = 64;
 
     @Override
     public void create() {
@@ -26,7 +26,7 @@ public class KeitaCity extends ApplicationAdapter {
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.position.set((20 * TILE_SIZE) / 2f, (20 * TILE_SIZE) / 2f, 0);
+        camera.position.set((20 * 64) / 2f, (20 * 64) / 2f, 0);
         camera.update();
 
         renderer = new WorldRenderer(world, camera);
