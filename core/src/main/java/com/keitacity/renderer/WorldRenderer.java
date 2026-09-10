@@ -3,6 +3,7 @@ package com.keitacity.renderer;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.keitacity.entity.Citizen;
 import com.keitacity.world.Grid;
@@ -12,11 +13,13 @@ public class WorldRenderer {
 
     private final World world;
     private final ShapeRenderer shapeRenderer;
+    private final OrthographicCamera camera;
 
     private static final int TILE_SIZE = 32;
 
-    public WorldRenderer(World world) {
+    public WorldRenderer(World world, OrthographicCamera camera) {
         this.world = world;
+        this.camera = camera;
         this.shapeRenderer = new ShapeRenderer();
     }
 
@@ -24,9 +27,10 @@ public class WorldRenderer {
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.15f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        Grid grid = world.grid;
-
+        shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        Grid grid = world.grid;
 
         // desenha grid
         for (int x = 0; x < grid.width; x++) {
