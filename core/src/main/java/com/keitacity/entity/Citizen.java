@@ -7,7 +7,7 @@ public class Citizen extends Entity {
 
     private static final Random random = new Random();
     private float moveTimer = 0f;
-    private static final float MOVE_INTERVAL = 0.5f; 
+    private static final float MOVE_INTERVAL = 0.5f;
 
     public Citizen(int startX, int startY) {
         this.x = startX;
@@ -28,15 +28,22 @@ public class Citizen extends Entity {
         int[] dx = {0, 0, 1, -1};
         int[] dy = {1, -1, 0, 0};
 
-        int dir = random.nextInt(4);
-        int newX = (int) x + dx[dir];
-        int newY = (int) y + dy[dir];
+        // tenta direções em ordem aleatória
+        int[] dirs = {0, 1, 2, 3};
+        for (int i = 3; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            int tmp = dirs[i]; dirs[i] = dirs[j]; dirs[j] = tmp;
+        }
 
-        // checa se está dentro do grid
-        if (newX >= 0 && newX < world.grid.width &&
-            newY >= 0 && newY < world.grid.height) {
-            x = newX;
-            y = newY;
+        for (int dir : dirs) {
+            int newX = (int) x + dx[dir];
+            int newY = (int) y + dy[dir];
+
+            if (world.isWalkable(newX, newY)) {
+                x = newX;
+                y = newY;
+                return;
+            }
         }
     }
 }

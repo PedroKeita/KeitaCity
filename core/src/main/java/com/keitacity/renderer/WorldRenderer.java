@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.keitacity.entity.Building;
 import com.keitacity.entity.Citizen;
 import com.keitacity.world.Grid;
 import com.keitacity.world.World;
@@ -30,9 +31,8 @@ public class WorldRenderer {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
+        // grid
         Grid grid = world.grid;
-
-        // desenha grid
         for (int x = 0; x < grid.width; x++) {
             for (int y = 0; y < grid.height; y++) {
                 if ((x + y) % 2 == 0) {
@@ -40,16 +40,22 @@ public class WorldRenderer {
                 } else {
                     shapeRenderer.setColor(Color.OLIVE);
                 }
-                shapeRenderer.rect(
-                    x * TILE_SIZE,
-                    y * TILE_SIZE,
-                    TILE_SIZE - 1,
-                    TILE_SIZE - 1
-                );
+                shapeRenderer.rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE - 1, TILE_SIZE - 1);
             }
         }
 
-        // desenha cidadãos
+        // prédios
+        shapeRenderer.setColor(Color.GRAY);
+        for (Building b : world.buildings) {
+            shapeRenderer.rect(
+                b.x * TILE_SIZE + 2,
+                b.y * TILE_SIZE + 2,
+                TILE_SIZE - 4,
+                TILE_SIZE - 4
+            );
+        }
+
+        // cidadãos
         shapeRenderer.setColor(Color.RED);
         for (Citizen c : world.citizens) {
             shapeRenderer.circle(

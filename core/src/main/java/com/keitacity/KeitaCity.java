@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.math.Vector3;
 import com.keitacity.renderer.WorldRenderer;
 import com.keitacity.world.World;
 
@@ -17,6 +18,7 @@ public class KeitaCity extends ApplicationAdapter {
     private static final float ZOOM_SPEED = 0.1f;
     private static final float MIN_ZOOM = 0.3f;
     private static final float MAX_ZOOM = 3f;
+    private static final int TILE_SIZE = 32;
 
     @Override
     public void create() {
@@ -24,11 +26,7 @@ public class KeitaCity extends ApplicationAdapter {
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        camera.position.set(
-            (20 * 32) / 2f,
-            (20 * 32) / 2f,
-            0
-        );
+        camera.position.set((20 * TILE_SIZE) / 2f, (20 * TILE_SIZE) / 2f, 0);
         camera.update();
 
         renderer = new WorldRenderer(world, camera);
@@ -37,6 +35,7 @@ public class KeitaCity extends ApplicationAdapter {
     @Override
     public void render() {
         handleInput();
+        handleClick();
         world.update();
         renderer.render();
     }
@@ -50,12 +49,27 @@ public class KeitaCity extends ApplicationAdapter {
         if (Gdx.input.isKeyPressed(Input.Keys.A)) camera.position.x -= speed * delta;
         if (Gdx.input.isKeyPressed(Input.Keys.D)) camera.position.x += speed * delta;
 
-        // zoom com scroll do mouse
         float scroll = Gdx.input.isKeyPressed(Input.Keys.Q) ? ZOOM_SPEED :
                        Gdx.input.isKeyPressed(Input.Keys.E) ? -ZOOM_SPEED : 0;
         camera.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, camera.zoom + scroll * delta * 10));
 
         camera.update();
+    }
+
+    private void handleClick() {
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            // converte posição do mouse para coordenadas do mundo
+            Vector3 worldPos = camera.unproject(new Vector3(
+                Gdx.input.getX(),
+                Gdx.input.getY(),
+                0
+            ));
+
+            int tileX = (int) (worldPos.x / TILE_SIZE);
+            int tileY = (int) (worldPos.y / TILE_SIZE);
+
+            world.placeBuilding(tileX, tileY);
+        }
     }
 
     @Override
