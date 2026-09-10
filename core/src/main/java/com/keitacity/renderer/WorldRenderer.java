@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.keitacity.entity.Citizen;
 import com.keitacity.world.Grid;
 import com.keitacity.world.World;
 
@@ -20,7 +21,6 @@ public class WorldRenderer {
     }
 
     public void render() {
-        // limpa a tela
         Gdx.gl.glClearColor(0.15f, 0.15f, 0.15f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -28,9 +28,9 @@ public class WorldRenderer {
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
+        // desenha grid
         for (int x = 0; x < grid.width; x++) {
             for (int y = 0; y < grid.height; y++) {
-                // alterna cor para efeito xadrez
                 if ((x + y) % 2 == 0) {
                     shapeRenderer.setColor(Color.FOREST);
                 } else {
@@ -43,6 +43,16 @@ public class WorldRenderer {
                     TILE_SIZE - 1
                 );
             }
+        }
+
+        // desenha cidadãos
+        shapeRenderer.setColor(Color.RED);
+        for (Citizen c : world.citizens) {
+            shapeRenderer.circle(
+                c.x * TILE_SIZE + TILE_SIZE / 2f,
+                c.y * TILE_SIZE + TILE_SIZE / 2f,
+                TILE_SIZE / 3f
+            );
         }
 
         shapeRenderer.end();
