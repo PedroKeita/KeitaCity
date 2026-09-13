@@ -1,125 +1,255 @@
 package com.keitacity.renderer;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.g3d.Environment;
+import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.ModelBatch;
+import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.loader.ObjLoader;
 import com.keitacity.entity.Building;
 import com.keitacity.entity.Citizen;
-import com.keitacity.world.Grid;
 import com.keitacity.world.World;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class WorldRenderer {
 
     private final World world;
     private final OrthographicCamera camera;
-    private final SpriteBatch batch;
-    private final ShapeRenderer shapeRenderer;
 
-    private final Texture predioTex;
-    private final Texture cidadaoTex;
-    private final Texture estradaTex;
+    private final ModelBatch modelBatch;
+    private final Environment environment;
 
-    private static final int TILE_SIZE = 64;
-    private static final Color BG_COLOR = new Color(0.44f, 0.44f, 0.44f, 1f); // cinza do MagicaVoxel
+    private final Model predioModel;
+    private final Model cidadaoModel;
+    private final Model estradaModel;
 
-    public WorldRenderer(World world, OrthographicCamera camera) {
+    private final List<ModelInstance> roadInstances =
+            new ArrayList<>();
+
+    private final List<ModelInstance> buildingInstances =
+            new ArrayList<>();
+
+    private final List<ModelInstance> citizenInstances =
+            new ArrayList<>();
+
+    /*
+     * O estrada.obj atual possui aproximadamente
+     * 3.2 x 3.2 unidades.
+     */
+    private static final float TILE_SIZE = 3.2f;
+
+    /*
+     * Os modelos atuais de prédio e cidadão são
+     * cubos de aproximadamente 0.1 unidade.
+     *
+     * Essas escalas são temporárias para torná-los
+     * visíveis na cena.
+     */
+    private static final float BUILDING_SCALE = 20f;
+    private static final float CITIZEN_SCALE = 5f;
+
+    public WorldRenderer(
+            World world,
+            OrthographicCamera camera
+    ) {
+
         this.world = world;
         this.camera = camera;
-        this.batch = new SpriteBatch();
-        this.shapeRenderer = new ShapeRenderer();
 
-        predioTex  = loadWithColorKey("sprites/predio.png");
-        cidadaoTex = loadWithColorKey("sprites/cidadao.png");
-        estradaTex = loadWithColorKey("sprites/estrada.png");
+        modelBatch = new ModelBatch();
+
+        environment = new Environment();
+
+        environment.set(
+                new ColorAttribute(
+                        ColorAttribute.AmbientLight,
+                        0.65f,
+                        0.65f,
+                        0.65f,
+                        1f
+                )
+        );
+
+        environment.add(
+                new DirectionalLight().set(
+                        1f,
+                        1f,
+                        1f,
+                        -1f,
+                        -0.8f,
+                        -0.2f
+                )
+        );
+
+        ObjLoader loader = new ObjLoader();
+
+        predioModel = loader.loadModel(
+                Gdx.files.internal(
+                        "models/predio.obj"
+                )
+        );
+
+        cidadaoModel = loader.loadModel(
+                Gdx.files.internal(
+                        "models/cidadao.obj"
+                )
+        );
+
+        estradaModel = loader.loadModel(
+                Gdx.files.internal(
+                        "models/estrada.obj"
+                )
+        );
+
+        createRoads();
     }
 
-    // remove o fundo cinza do MagicaVoxel tornando-o transparente
-    private Texture loadWithColorKey(String path) {
-        Pixmap raw = new Pixmap(Gdx.files.internal(path));
-        Pixmap out = new Pixmap(raw.getWidth(), raw.getHeight(), Pixmap.Format.RGBA8888);
+    private void createRoads() {
 
-        int bgR = 112, bgG = 112, bgB = 112; // RGB do cinza #707070
-        int threshold = 30; // tolerância para variações de sombra
+        roadInstances.clear();
 
-        for (int x = 0; x < raw.getWidth(); x++) {
-            for (int y = 0; y < raw.getHeight(); y++) {
-                int pixel = raw.getPixel(x, y);
-                int r = (pixel >> 24) & 0xFF;
-                int g = (pixel >> 16) & 0xFF;
-                int b = (pixel >> 8)  & 0xFF;
+        for (int x = 0; x < world.grid.width; x++) {
 
-                boolean isBg = Math.abs(r - bgR) < threshold &&
-                               Math.abs(g - bgG) < threshold &&
-                               Math.abs(b - bgB) < threshold;
+            for (int y = 0; y < world.grid.height; y++) {
 
-                if (isBg) {
-                    out.drawPixel(x, y, 0x00000000); // transparente
-                } else {
-                    out.drawPixel(x, y, pixel);
-                }
+                ModelInstance instance =
+                        new ModelInstance(estradaModel);
+
+                float worldX = x * TILE_SIZE;
+                float worldZ = y * TILE_SIZE;
+
+                instance.transform.setToTranslation(
+                        worldX,
+                        0f,
+                        worldZ
+                );
+
+                roadInstances.add(instance);
             }
         }
-
-        Texture tex = new Texture(out);
-        raw.dispose();
-        out.dispose();
-        return tex;
     }
 
     public void render() {
-        Gdx.gl.glClearColor(0.2f, 0.5f, 0.2f, 1f); // fundo verde (grama)
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        Grid grid = world.grid;
+        Gdx.gl.glClearColor(
+                0.45f,
+                0.65f,
+                0.85f,
+                1f
+        );
 
-        // desenha estrada em todos os tiles
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
+        Gdx.gl.glClear(
+                GL20.GL_COLOR_BUFFER_BIT |
+                GL20.GL_DEPTH_BUFFER_BIT
+        );
 
-        for (int x = 0; x < grid.width; x++) {
-            for (int y = 0; y < grid.height; y++) {
-                batch.draw(estradaTex,
-                    x * TILE_SIZE,
-                    y * TILE_SIZE,
-                    TILE_SIZE,
-                    TILE_SIZE
-                );
-            }
-        }
+        Gdx.gl.glEnable(
+                GL20.GL_DEPTH_TEST
+        );
 
-        // desenha prédios
-        for (Building b : world.buildings) {
-            batch.draw(predioTex,
-                b.x * TILE_SIZE,
-                b.y * TILE_SIZE,
-                TILE_SIZE,
-                TILE_SIZE
+        updateBuildings();
+        updateCitizens();
+
+        modelBatch.begin(camera);
+
+        for (ModelInstance instance : roadInstances) {
+            modelBatch.render(
+                    instance,
+                    environment
             );
         }
 
-        // desenha cidadãos
-        for (Citizen c : world.citizens) {
-            batch.draw(cidadaoTex,
-                c.x * TILE_SIZE,
-                c.y * TILE_SIZE,
-                TILE_SIZE,
-                TILE_SIZE
+        for (ModelInstance instance : buildingInstances) {
+            modelBatch.render(
+                    instance,
+                    environment
             );
         }
 
-        batch.end();
+        for (ModelInstance instance : citizenInstances) {
+            modelBatch.render(
+                    instance,
+                    environment
+            );
+        }
+
+        modelBatch.end();
+    }
+
+    private void updateBuildings() {
+
+        buildingInstances.clear();
+
+        for (Building building : world.buildings) {
+
+            ModelInstance instance =
+                    new ModelInstance(predioModel);
+
+            float worldX =
+                    building.x * TILE_SIZE;
+
+            float worldZ =
+                    building.y * TILE_SIZE;
+
+            instance.transform.setToTranslation(
+                    worldX,
+                    0.1f,
+                    worldZ
+            );
+
+            instance.transform.scale(
+                    BUILDING_SCALE,
+                    BUILDING_SCALE,
+                    BUILDING_SCALE
+            );
+
+            buildingInstances.add(instance);
+        }
+    }
+
+    private void updateCitizens() {
+
+        citizenInstances.clear();
+
+        for (Citizen citizen : world.citizens) {
+
+            ModelInstance instance =
+                    new ModelInstance(cidadaoModel);
+
+            float worldX =
+                    citizen.x * TILE_SIZE;
+
+            float worldZ =
+                    citizen.y * TILE_SIZE;
+
+            instance.transform.setToTranslation(
+                    worldX,
+                    0.25f,
+                    worldZ
+            );
+
+            instance.transform.scale(
+                    CITIZEN_SCALE,
+                    CITIZEN_SCALE,
+                    CITIZEN_SCALE
+            );
+
+            citizenInstances.add(instance);
+        }
     }
 
     public void dispose() {
-        batch.dispose();
-        shapeRenderer.dispose();
-        predioTex.dispose();
-        cidadaoTex.dispose();
-        estradaTex.dispose();
+
+        modelBatch.dispose();
+
+        predioModel.dispose();
+        cidadaoModel.dispose();
+        estradaModel.dispose();
     }
 }

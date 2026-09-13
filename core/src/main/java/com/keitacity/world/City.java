@@ -1,4 +1,4 @@
-package keitacity.world;
+package com.keitacity.world;
 
 public class City {
     
