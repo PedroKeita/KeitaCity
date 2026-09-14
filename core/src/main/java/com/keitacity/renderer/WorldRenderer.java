@@ -40,7 +40,9 @@ public class WorldRenderer {
          * Reutilizados por todas as instâncias.
          */
         private final Model groundModel;
-        private final Model buildingModel;
+        private final Model residentialBuildingModel;
+        private final Model commercialBuildingModel;
+        private final Model industrialBuildingModel;
         private final Model citizenModel;
 
         private final Model residentialZoneModel;
@@ -112,7 +114,13 @@ public class WorldRenderer {
                  * Sem arquivos .obj — tudo em código.
                  */
                 groundModel = VoxelMeshBuilder.createCube(VoxelPalette.GRASS);
-                buildingModel = VoxelMeshBuilder.createCube(VoxelPalette.BUILDING_RESIDENTIAL);
+                
+                residentialBuildingModel = VoxelMeshBuilder.createCube(VoxelPalette.BUILDING_RESIDENTIAL);
+
+                commercialBuildingModel = VoxelMeshBuilder.createCube(VoxelPalette.BUILDING_COMMERCIAL);
+
+                industrialBuildingModel = VoxelMeshBuilder.createCube(VoxelPalette.BUILDING_INDUSTRIAL);
+
                 citizenModel = VoxelMeshBuilder.createCube(VoxelPalette.CITIZEN);
 
                 buildGroundInstances();
@@ -193,7 +201,23 @@ public class WorldRenderer {
 
                         for (int floor = 0; floor < BUILDING_FLOORS; floor++) {
 
-                                ModelInstance instance = new ModelInstance(buildingModel);
+                                Model model;
+
+                                switch (building.type) {
+                                        case RESIDENTIAL:
+                                                model = residentialBuildingModel;
+                                                break;
+                                        case COMMERCIAL:
+                                                model = commercialBuildingModel;
+                                                break;
+                                        case INDUSTRIAL:
+                                                model = industrialBuildingModel;
+                                                break;
+                                        default:
+                                                model = residentialBuildingModel;
+                                }
+
+                                ModelInstance instance = new ModelInstance(model);
 
                                 float worldX = building.x * TILE_SIZE;
                                 float worldZ = building.y * TILE_SIZE;
@@ -305,7 +329,9 @@ public class WorldRenderer {
         public void dispose() {
                 modelBatch.dispose();
                 groundModel.dispose();
-                buildingModel.dispose();
+                residentialBuildingModel.dispose();
+                commercialBuildingModel.dispose();
+                industrialBuildingModel.dispose();
                 citizenModel.dispose();
                 residentialZoneModel.dispose();
                 commercialZoneModel.dispose();

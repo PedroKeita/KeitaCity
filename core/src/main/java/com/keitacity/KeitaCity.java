@@ -143,35 +143,6 @@ public class KeitaCity extends ApplicationAdapter {
         updateCamera();
     }
 
-    /**
-     * Converte clique na tela → tile no grid
-     * usando raycasting contra o plano Y=0.
-     */
-    private void placeBuildingAtMouse(int screenX, int screenY) {
-
-        Ray ray = camera.getPickRay(screenX, screenY);
-
-        if (!Intersector.intersectRayPlane(
-                ray, groundPlane, intersection)) {
-            return;
-        }
-
-        /*
-         * Coordenada de mundo → grid.
-         *
-         * +0.5 para arredondar para o
-         * centro do tile mais próximo.
-         */
-        int gridX = Math.round(intersection.x);
-        int gridY = Math.round(intersection.z);
-
-        boolean placed = world.placeBuilding(gridX, gridY);
-
-        System.out.println(placed
-                ? "Predio colocado em: " + gridX + ", " + gridY
-                : "Tile ocupado ou fora do mapa: " + gridX + ", " + gridY);
-    }
-
     @Override
     public void render() {
         handleKeyboard();
