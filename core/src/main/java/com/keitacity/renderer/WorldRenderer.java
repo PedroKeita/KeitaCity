@@ -1,6 +1,7 @@
 package com.keitacity.renderer;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g3d.Environment;
@@ -9,7 +10,7 @@ import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import com.badlogic.gdx.graphics.g3d.loader.ObjLoader;
+import com.badlogic.gdx.math.Vector3;
 import com.keitacity.entity.Building;
 import com.keitacity.entity.Citizen;
 import com.keitacity.world.World;
@@ -17,6 +18,14 @@ import com.keitacity.world.World;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Renderiza o mundo usando cubos voxel
+ * em projeção isométrica ortográfica.
+ *
+ * Estilo inspirado no Voxel Tycoon:
+ * câmera fixa em 45° yaw / 30° pitch,
+ * blocos coloridos sem textura (por agora).
+ */
 public class WorldRenderer {
 
     private final World world;
@@ -25,11 +34,18 @@ public class WorldRenderer {
     private final ModelBatch modelBatch;
     private final Environment environment;
 
-    private final Model predioModel;
-    private final Model cidadaoModel;
-    private final Model estradaModel;
+    /*
+     * Modelos base: um por cor.
+     * Reutilizados por todas as instâncias.
+     */
+    private final Model groundModel;
+    private final Model buildingModel;
+    private final Model citizenModel;
 
-    private final List<ModelInstance> roadInstances =
+    /*
+     * Instâncias renderizadas a cada frame.
+     */
+    private final List<ModelInstance> groundInstances =
             new ArrayList<>();
 
     private final List<ModelInstance> buildingInstances =
@@ -39,180 +55,171 @@ public class WorldRenderer {
             new ArrayList<>();
 
     /*
-     * O estrada.obj atual possui aproximadamente
-     * 3.2 x 3.2 unidades.
+     * Espaçamento entre tiles no mundo 3D.
+     * 1 unidade = 1 bloco voxel.
      */
-    private static final float TILE_SIZE = 3.2f;
+    private static final float TILE_SIZE = 1f;
 
     /*
-     * Os modelos atuais de prédio e cidadão são
-     * cubos de aproximadamente 0.1 unidade.
-     *
-     * Essas escalas são temporárias para torná-los
-     * visíveis na cena.
+     * Altura do bloco de chão.
      */
-    private static final float BUILDING_SCALE = 20f;
-    private static final float CITIZEN_SCALE = 5f;
+    private static final float GROUND_HEIGHT = 0.25f;
+
+    /*
+     * Altura de cada andar de prédio.
+     */
+    private static final float FLOOR_HEIGHT = 1f;
+
+    /*
+     * Andares do prédio padrão.
+     */
+    private static final int BUILDING_FLOORS = 3;
 
     public WorldRenderer(
             World world,
             OrthographicCamera camera
     ) {
-
         this.world = world;
         this.camera = camera;
 
         modelBatch = new ModelBatch();
 
+        /*
+         * Ambiente com luz suave + direcional
+         * para realçar as faces do cubo.
+         */
         environment = new Environment();
-
         environment.set(
                 new ColorAttribute(
                         ColorAttribute.AmbientLight,
-                        0.65f,
-                        0.65f,
-                        0.65f,
-                        1f
+                        0.55f, 0.55f, 0.55f, 1f
                 )
         );
-
         environment.add(
                 new DirectionalLight().set(
-                        1f,
-                        1f,
-                        1f,
-                        -1f,
-                        -0.8f,
-                        -0.2f
+                        0.9f, 0.9f, 0.85f,
+                        -1f, -1.2f, -0.5f
                 )
         );
 
-        ObjLoader loader = new ObjLoader();
+        /*
+         * Modelos gerados proceduralmente.
+         * Sem arquivos .obj — tudo em código.
+         */
+        groundModel   = VoxelMeshBuilder.createCube(VoxelPalette.GRASS);
+        buildingModel = VoxelMeshBuilder.createCube(VoxelPalette.BUILDING_RESIDENTIAL);
+        citizenModel  = VoxelMeshBuilder.createCube(VoxelPalette.CITIZEN);
 
-        predioModel = loader.loadModel(
-                Gdx.files.internal(
-                        "models/predio.obj"
-                )
-        );
-
-        cidadaoModel = loader.loadModel(
-                Gdx.files.internal(
-                        "models/cidadao.obj"
-                )
-        );
-
-        estradaModel = loader.loadModel(
-                Gdx.files.internal(
-                        "models/estrada.obj"
-                )
-        );
-
-        createRoads();
+        buildGroundInstances();
     }
 
-    private void createRoads() {
+    /**
+     * Pré-cria as instâncias do chão.
+     *
+     * O chão não muda a cada frame, então
+     * criamos uma vez só.
+     */
+    private void buildGroundInstances() {
 
-        roadInstances.clear();
+        groundInstances.clear();
 
         for (int x = 0; x < world.grid.width; x++) {
-
             for (int y = 0; y < world.grid.height; y++) {
 
                 ModelInstance instance =
-                        new ModelInstance(estradaModel);
+                        new ModelInstance(groundModel);
 
-                float worldX = x * TILE_SIZE;
-                float worldZ = y * TILE_SIZE;
+                /*
+                 * Escala: tile largo e fino,
+                 * parecendo um bloco de chão voxel.
+                 */
+                instance.transform
+                        .setToTranslation(
+                                x * TILE_SIZE,
+                                -GROUND_HEIGHT / 2f,
+                                y * TILE_SIZE
+                        )
+                        .scale(
+                                TILE_SIZE,
+                                GROUND_HEIGHT,
+                                TILE_SIZE
+                        );
 
-                instance.transform.setToTranslation(
-                        worldX,
-                        0f,
-                        worldZ
-                );
-
-                roadInstances.add(instance);
+                groundInstances.add(instance);
             }
         }
     }
 
     public void render() {
 
-        Gdx.gl.glClearColor(
-                0.45f,
-                0.65f,
-                0.85f,
-                1f
-        );
-
+        Gdx.gl.glClearColor(0.53f, 0.80f, 0.92f, 1f);
         Gdx.gl.glClear(
                 GL20.GL_COLOR_BUFFER_BIT |
                 GL20.GL_DEPTH_BUFFER_BIT
         );
-
-        Gdx.gl.glEnable(
-                GL20.GL_DEPTH_TEST
-        );
+        Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
 
         updateBuildings();
         updateCitizens();
 
         modelBatch.begin(camera);
 
-        for (ModelInstance instance : roadInstances) {
-            modelBatch.render(
-                    instance,
-                    environment
-            );
-        }
-
-        for (ModelInstance instance : buildingInstances) {
-            modelBatch.render(
-                    instance,
-                    environment
-            );
-        }
-
-        for (ModelInstance instance : citizenInstances) {
-            modelBatch.render(
-                    instance,
-                    environment
-            );
-        }
+        for (ModelInstance i : groundInstances)   modelBatch.render(i, environment);
+        for (ModelInstance i : buildingInstances) modelBatch.render(i, environment);
+        for (ModelInstance i : citizenInstances)  modelBatch.render(i, environment);
 
         modelBatch.end();
     }
 
+    /**
+     * Reconstrói instâncias de prédios.
+     *
+     * Cada prédio = N cubos empilhados
+     * (um por andar).
+     */
     private void updateBuildings() {
 
         buildingInstances.clear();
 
         for (Building building : world.buildings) {
 
-            ModelInstance instance =
-                    new ModelInstance(predioModel);
+            for (int floor = 0; floor < BUILDING_FLOORS; floor++) {
 
-            float worldX =
-                    building.x * TILE_SIZE;
+                ModelInstance instance =
+                        new ModelInstance(buildingModel);
 
-            float worldZ =
-                    building.y * TILE_SIZE;
+                float worldX = building.x * TILE_SIZE;
+                float worldZ = building.y * TILE_SIZE;
 
-            instance.transform.setToTranslation(
-                    worldX,
-                    0.1f,
-                    worldZ
-            );
+                /*
+                 * Cada andar empilhado em Y.
+                 *
+                 * O chão fica em Y=0, então o
+                 * primeiro andar começa em Y=0.5
+                 * (metade do cubo acima do chão).
+                 */
+                float worldY =
+                        floor * FLOOR_HEIGHT
+                        + FLOOR_HEIGHT / 2f;
 
-            instance.transform.scale(
-                    BUILDING_SCALE,
-                    BUILDING_SCALE,
-                    BUILDING_SCALE
-            );
+                instance.transform
+                        .setToTranslation(
+                                worldX,
+                                worldY,
+                                worldZ
+                        );
 
-            buildingInstances.add(instance);
+                buildingInstances.add(instance);
+            }
         }
     }
 
+    /**
+     * Reconstrói instâncias de cidadãos.
+     *
+     * Cidadão = cubo pequeno andando
+     * sobre o chão.
+     */
     private void updateCitizens() {
 
         citizenInstances.clear();
@@ -220,36 +227,32 @@ public class WorldRenderer {
         for (Citizen citizen : world.citizens) {
 
             ModelInstance instance =
-                    new ModelInstance(cidadaoModel);
+                    new ModelInstance(citizenModel);
 
-            float worldX =
-                    citizen.x * TILE_SIZE;
+            float worldX = citizen.x * TILE_SIZE;
+            float worldZ = citizen.y * TILE_SIZE;
 
-            float worldZ =
-                    citizen.y * TILE_SIZE;
+            /*
+             * Cidadão fica sobre o chão.
+             */
+            float worldY = FLOOR_HEIGHT * 0.3f;
 
-            instance.transform.setToTranslation(
-                    worldX,
-                    0.25f,
-                    worldZ
-            );
-
-            instance.transform.scale(
-                    CITIZEN_SCALE,
-                    CITIZEN_SCALE,
-                    CITIZEN_SCALE
-            );
+            instance.transform
+                    .setToTranslation(
+                            worldX,
+                            worldY,
+                            worldZ
+                    )
+                    .scale(0.4f, 0.6f, 0.4f);
 
             citizenInstances.add(instance);
         }
     }
 
     public void dispose() {
-
         modelBatch.dispose();
-
-        predioModel.dispose();
-        cidadaoModel.dispose();
-        estradaModel.dispose();
+        groundModel.dispose();
+        buildingModel.dispose();
+        citizenModel.dispose();
     }
 }
