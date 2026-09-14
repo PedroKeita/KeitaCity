@@ -11,6 +11,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.keitacity.renderer.WorldRenderer;
 import com.keitacity.world.World;
+import com.keitacity.world.ZoneType;
 
 /**
  * Classe principal do KeitaCity.
@@ -18,31 +19,32 @@ import com.keitacity.world.World;
  * Câmera isométrica ortográfica fixa,
  * inspirada no Voxel Tycoon:
  *
- *   - Yaw fixo em 45° (diagonal)
- *   - Pitch fixo em 30° (levemente de cima)
- *   - Pan com WASD ou clique do meio
- *   - Zoom com scroll / Q e E
- *   - Sem rotação livre (por ora)
+ * - Yaw fixo em 45° (diagonal)
+ * - Pitch fixo em 30° (levemente de cima)
+ * - Pan com WASD ou clique do meio
+ * - Zoom com scroll / Q e E
+ * - Sem rotação livre (por ora)
  */
 public class KeitaCity extends ApplicationAdapter {
 
     private World world;
     private WorldRenderer renderer;
     private OrthographicCamera camera;
+    private BuildTool currentTool = BuildTool.RESIDENTIAL;
 
     /*
      * Ângulos fixos da câmera isométrica.
      *
-     * yaw  = 45° → diagonal (visão de canto)
+     * yaw = 45° → diagonal (visão de canto)
      * pitch = 30° → levemente acima do horizonte
      */
-    private static final float YAW_DEG   = 45f;
+    private static final float YAW_DEG = 45f;
     private static final float PITCH_DEG = 30f;
 
     private static final float CAMERA_SPEED = 12f;
-    private static final float ZOOM_SPEED   = 0.8f;
-    private static final float ZOOM_MIN     = 3f;
-    private static final float ZOOM_MAX     = 30f;
+    private static final float ZOOM_SPEED = 0.8f;
+    private static final float ZOOM_MIN = 3f;
+    private static final float ZOOM_MAX = 30f;
 
     /*
      * Ponto central que a câmera observa.
@@ -53,8 +55,7 @@ public class KeitaCity extends ApplicationAdapter {
      * Plano do chão para raycasting
      * (Y = 0).
      */
-    private final Plane groundPlane =
-            new Plane(new Vector3(0f, 1f, 0f), 0f);
+    private final Plane groundPlane = new Plane(new Vector3(0f, 1f, 0f), 0f);
 
     private final Vector3 intersection = new Vector3();
 
@@ -72,10 +73,9 @@ public class KeitaCity extends ApplicationAdapter {
          * centro do mapa.
          */
         cameraTarget.set(
-                world.grid.width  / 2f,
+                world.grid.width / 2f,
                 0f,
-                world.grid.height / 2f
-        );
+                world.grid.height / 2f);
 
         updateCamera();
 
@@ -94,7 +94,7 @@ public class KeitaCity extends ApplicationAdapter {
      */
     private void updateCamera() {
 
-        float yawRad   = (float) Math.toRadians(YAW_DEG);
+        float yawRad = (float) Math.toRadians(YAW_DEG);
         float pitchRad = (float) Math.toRadians(PITCH_DEG);
 
         float distance = camera.zoom * 1.8f;
@@ -119,10 +119,9 @@ public class KeitaCity extends ApplicationAdapter {
             @Override
             public boolean touchDown(
                     int screenX, int screenY,
-                    int pointer, int button
-            ) {
+                    int pointer, int button) {
                 if (button == Input.Buttons.LEFT) {
-                    placeBuildingAtMouse(screenX, screenY);
+                    handleClick(screenX, screenY);
                     return true;
                 }
                 return false;
@@ -130,8 +129,7 @@ public class KeitaCity extends ApplicationAdapter {
 
             @Override
             public boolean scrolled(
-                    float amountX, float amountY
-            ) {
+                    float amountX, float amountY) {
                 zoom(amountY);
                 return true;
             }
@@ -141,7 +139,7 @@ public class KeitaCity extends ApplicationAdapter {
     private void zoom(float amount) {
         camera.zoom += amount * ZOOM_SPEED;
         camera.zoom = Math.max(ZOOM_MIN,
-                       Math.min(camera.zoom, ZOOM_MAX));
+                Math.min(camera.zoom, ZOOM_MAX));
         updateCamera();
     }
 
@@ -171,8 +169,7 @@ public class KeitaCity extends ApplicationAdapter {
 
         System.out.println(placed
                 ? "Predio colocado em: " + gridX + ", " + gridY
-                : "Tile ocupado ou fora do mapa: " + gridX + ", " + gridY
-        );
+                : "Tile ocupado ou fora do mapa: " + gridX + ", " + gridY);
     }
 
     @Override
@@ -232,18 +229,92 @@ public class KeitaCity extends ApplicationAdapter {
         if (Gdx.input.isKeyPressed(Input.Keys.E)) {
             zoom(ZOOM_SPEED * delta * 3f);
         }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            currentTool = BuildTool.RESIDENTIAL;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
+            currentTool = BuildTool.COMMERCIAL;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) {
+            currentTool = BuildTool.INDUSTRIAL;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.X)) {
+            currentTool = BuildTool.DEMOLISH;
+        }
+    }
+
+    private void handleClick(int screenX, int screenY) {
+
+        Ray ray = camera.getPickRay(screenX, screenY);
+
+        if (!Intersector.intersectRayPlane(
+                ray,
+                groundPlane,
+                intersection)) {
+            return;
+        }
+
+        int gridX = Math.round(intersection.x);
+        int gridY = Math.round(intersection.z);
+
+        switch (currentTool) {
+
+            case RESIDENTIAL:
+
+                world.zoning.zone(
+                        gridX,
+                        gridY,
+                        ZoneType.RESIDENTIAL);
+
+                break;
+
+            case COMMERCIAL:
+
+                world.zoning.zone(
+                        gridX,
+                        gridY,
+                        ZoneType.COMMERCIAL);
+
+                break;
+
+            case INDUSTRIAL:
+
+                world.zoning.zone(
+                        gridX,
+                        gridY,
+                        ZoneType.INDUSTRIAL);
+
+                break;
+
+            case DEMOLISH:
+
+                world.zoning.removeZone(
+                        gridX,
+                        gridY);
+
+                break;
+
+            default:
+                break;
+        }
     }
 
     @Override
     public void resize(int width, int height) {
-        if (height == 0) return;
-        camera.viewportWidth  = 24f;
+        if (height == 0)
+            return;
+        camera.viewportWidth = 24f;
         camera.viewportHeight = 24f * height / width;
         updateCamera();
     }
 
     @Override
     public void dispose() {
-        if (renderer != null) renderer.dispose();
+        if (renderer != null)
+            renderer.dispose();
     }
 }

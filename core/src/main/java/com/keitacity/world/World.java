@@ -13,8 +13,11 @@ public class World {
     public final List<Building> buildings = new ArrayList<>();
     public float delta;
 
+    public final ZoningSystem zoning;
+
     public World(int width, int height) {
         this.grid = new Grid(width, height);
+        this.zoning = new ZoningSystem(this);
         citizens.add(new Citizen(width / 2, height / 2));
     }
 
@@ -27,15 +30,15 @@ public class World {
 
     public boolean placeBuilding(int x, int y) {
         if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) return false;
-        if (grid.tiles[x][y].occupied) return false;
+        if (grid.tiles[x][y].isOccupied()) return false;
 
-        grid.tiles[x][y].occupied = true;
+        grid.tiles[x][y].setOccupied(true);
         buildings.add(new Building(x, y));
         return true;
     }
 
     public boolean isWalkable(int x, int y) {
         if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) return false;
-        return !grid.tiles[x][y].occupied;
+        return !grid.tiles[x][y].isOccupied();
     }
 }
