@@ -36,6 +36,10 @@ public class KeitaCity extends ApplicationAdapter {
 
     private final Plane groundPlane = new Plane(new Vector3(0f, 1f, 0f), 0f);
 
+    private boolean dragging = false;
+    private int lastGridX = -1;
+    private int lastGridY = -1;
+
     @Override
     public void create() {
 
@@ -97,12 +101,46 @@ public class KeitaCity extends ApplicationAdapter {
                     int pointer,
                     int button) {
 
-                if (button == Input.Buttons.LEFT) {
-                    handleClick(screenX, screenY);
-                    return true;
+                if (button != Input.Buttons.LEFT) {
+                    return false;
                 }
 
-                return false;
+                dragging = true;
+
+                buildAtMouse(screenX, screenY);
+
+                return true;
+            }
+
+            @Override
+            public boolean touchDragged(
+                    int screenX,
+                    int screenY,
+                    int pointer) {
+
+                if (!dragging) {
+                    return false;
+                }
+
+                buildAtMouse(screenX, screenY);
+
+                return true;
+            }
+
+            @Override
+            public boolean touchUp(
+                    int screenX,
+                    int screenY,
+                    int pointer,
+                    int button) {
+
+                if (button == Input.Buttons.LEFT) {
+                    dragging = false;
+                    lastGridX = -1;
+                    lastGridY = -1;
+                }
+
+                return true;
             }
 
             @Override
@@ -115,6 +153,30 @@ public class KeitaCity extends ApplicationAdapter {
                 return true;
             }
         });
+    }
+
+    private void buildAtMouse(int screenX, int screenY) {
+
+        Ray ray = camera.getPickRay(screenX, screenY);
+
+        if (!Intersector.intersectRayPlane(
+                ray,
+                groundPlane,
+                intersection)) {
+            return;
+        }
+
+        int gridX = Math.round(intersection.x);
+        int gridY = Math.round(intersection.z);
+
+        if (gridX == lastGridX && gridY == lastGridY) {
+            return;
+        }
+
+        lastGridX = gridX;
+        lastGridY = gridY;
+
+        handleGridClick(gridX, gridY);
     }
 
     private void zoom(float amount) {
@@ -222,21 +284,13 @@ public class KeitaCity extends ApplicationAdapter {
         }
     }
 
-    private void handleClick(int screenX, int screenY) {
-
-        Ray ray = camera.getPickRay(screenX, screenY);
-
-        if (!Intersector.intersectRayPlane(
-                ray,
-                groundPlane,
-                intersection)) {
-            return;
-        }
-
-        int gridX = Math.round(intersection.x);
-        int gridY = Math.round(intersection.z);
+    private void handleGridClick(int gridX, int gridY) {
 
         switch (currentTool) {
+
+            case ROAD:
+                world.buildRoad(gridX, gridY);
+                break;
 
             case RESIDENTIAL:
                 world.zoning.zone(
@@ -257,10 +311,6 @@ public class KeitaCity extends ApplicationAdapter {
                         gridX,
                         gridY,
                         ZoneType.INDUSTRIAL);
-                break;
-
-            case ROAD:
-                world.buildRoad(gridX, gridY);
                 break;
 
             case DEMOLISH:
