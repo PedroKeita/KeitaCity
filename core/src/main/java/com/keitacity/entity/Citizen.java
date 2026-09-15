@@ -1,13 +1,22 @@
 package com.keitacity.entity;
 
+import com.keitacity.world.Pathfinder;
 import com.keitacity.world.World;
 import java.util.Random;
+import java.util.List;
 
 public class Citizen extends Entity {
 
     private static final Random random = new Random();
     private float moveTimer = 0f;
     private static final float MOVE_INTERVAL = 0.5f;
+
+    private int targetX;
+    private int targetY;
+    private boolean hasTarget = false;
+
+    private List<int[]> path = new java.util.ArrayList<>();
+    private int pathIndex = 0;
 
     public Citizen(int startX, int startY) {
         this.x = startX;
@@ -25,25 +34,51 @@ public class Citizen extends Entity {
     }
 
     private void tryMove(World world) {
-        int[] dx = {0, 0, 1, -1};
-        int[] dy = {1, -1, 0, 0};
 
-        // tenta direções em ordem aleatória
-        int[] dirs = {0, 1, 2, 3};
-        for (int i = 3; i > 0; i--) {
-            int j = random.nextInt(i + 1);
-            int tmp = dirs[i]; dirs[i] = dirs[j]; dirs[j] = tmp;
+        if (!hasTarget) {
+            targetX = random.nextInt(world.grid.width);
+            targetY = random.nextInt(world.grid.height);
+            hasTarget = true;
+            path = Pathfinder.findPath(
+                    world,
+                    (int) x,
+                    (int) y,
+                    targetX,
+                    targetY);
+            pathIndex = 0;
         }
 
-        for (int dir : dirs) {
-            int newX = (int) x + dx[dir];
-            int newY = (int) y + dy[dir];
-
-            if (world.isWalkable(newX, newY)) {
-                x = newX;
-                y = newY;
-                return;
-            }
+        if (pathIndex >= path.size()) {
+            hasTarget = false;
+            return;
         }
+
+        int[] next = path.get(pathIndex);
+
+        if (world.isWalkable(next[0], next[1])) {
+            x = next[0];
+            y = next[1];
+            pathIndex++;
+            return;
+        }
+
+        hasTarget = false;
+        path.clear();
+    }
+
+    public int getTargetX() {
+        return targetX;
+    }
+
+    public int getTargetY() {
+        return targetY;
+    }
+
+    public boolean hasTarget() {
+        return hasTarget;
+    }
+
+    public List<int[]> getPath() {
+        return path;
     }
 }

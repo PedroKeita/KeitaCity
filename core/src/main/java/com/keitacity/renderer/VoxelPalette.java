@@ -40,4 +40,6 @@ public class VoxelPalette {
         public static final Color ZONE_COMMERCIAL = new Color(0.25f, 0.55f, 0.95f, 1f);
 
         public static final Color ZONE_INDUSTRIAL = new Color(0.95f, 0.60f, 0.20f, 1f);
+
+        public static final Color PATH = new Color(0.2f,0.7f,1f,1f);
 }

@@ -50,6 +50,9 @@ public class WorldRenderer {
         private final Model commercialZoneModel;
         private final Model industrialZoneModel;
 
+        private final Model pathModel;
+        private final List<ModelInstance> pathInstances = new ArrayList<>();
+
         /*
          * Instâncias renderizadas a cada frame.
          */
@@ -95,6 +98,8 @@ public class WorldRenderer {
                 commercialZoneModel = VoxelMeshBuilder.createCube(VoxelPalette.ZONE_COMMERCIAL);
 
                 industrialZoneModel = VoxelMeshBuilder.createCube(VoxelPalette.ZONE_INDUSTRIAL);
+
+                pathModel = VoxelMeshBuilder.createCube(VoxelPalette.PATH);
 
                 modelBatch = new ModelBatch();
 
@@ -173,6 +178,7 @@ public class WorldRenderer {
                                                 GL20.GL_DEPTH_BUFFER_BIT);
                 Gdx.gl.glEnable(GL20.GL_DEPTH_TEST);
 
+                updatePaths();
                 updateBuildings();
                 updateCitizens();
                 updateRoads();
@@ -190,6 +196,9 @@ public class WorldRenderer {
                         modelBatch.render(i, environment);
                 for (ModelInstance i : roadInstances)
                         modelBatch.render(i, environment);
+                for (ModelInstance instance : pathInstances) {
+                        modelBatch.render(instance, environment);
+                }
 
                 modelBatch.end();
         }
@@ -357,6 +366,34 @@ public class WorldRenderer {
                                                                 TILE_SIZE);
 
                                 roadInstances.add(instance);
+                        }
+                }
+        }
+
+        private void updatePaths() {
+
+                pathInstances.clear();
+
+                for (Citizen citizen : world.citizens) {
+
+                        if (!citizen.hasTarget())
+                                continue;
+
+                        for (int[] position : citizen.getPath()) {
+
+                                ModelInstance instance = new ModelInstance(pathModel);
+
+                                instance.transform.setToTranslation(
+                                                position[0],
+                                                0.18f,
+                                                position[1]);
+
+                                instance.transform.scale(
+                                                0.25f,
+                                                0.05f,
+                                                0.25f);
+
+                                pathInstances.add(instance);
                         }
                 }
         }
