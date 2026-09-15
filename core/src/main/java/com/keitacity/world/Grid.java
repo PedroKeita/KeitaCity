@@ -17,4 +17,12 @@ public class Grid {
             }
         }
     }
+
+    public boolean isInside(int x, int y) {
+        return x >= 0 && x < width && y >= 0 && y < height;
+    }
+
+    public Tile getTile(int x, int y) {
+        return tiles[x][y];
+    }
 }

@@ -34,8 +34,7 @@ public class KeitaCity extends ApplicationAdapter {
     private final Vector3 cameraTarget = new Vector3();
     private final Vector3 intersection = new Vector3();
 
-    private final Plane groundPlane =
-            new Plane(new Vector3(0f, 1f, 0f), 0f);
+    private final Plane groundPlane = new Plane(new Vector3(0f, 1f, 0f), 0f);
 
     @Override
     public void create() {
@@ -49,8 +48,7 @@ public class KeitaCity extends ApplicationAdapter {
         cameraTarget.set(
                 world.grid.width / 2f,
                 0f,
-                world.grid.height / 2f
-        );
+                world.grid.height / 2f);
 
         updateCamera();
 
@@ -64,22 +62,17 @@ public class KeitaCity extends ApplicationAdapter {
         float yaw = (float) Math.toRadians(yawDeg);
         float pitch = (float) Math.toRadians(PITCH_DEG);
 
-        float horizontalDistance =
-                CAMERA_DISTANCE * (float) Math.cos(pitch);
+        float horizontalDistance = CAMERA_DISTANCE * (float) Math.cos(pitch);
 
-        float verticalDistance =
-                CAMERA_DISTANCE * (float) Math.sin(pitch);
+        float verticalDistance = CAMERA_DISTANCE * (float) Math.sin(pitch);
 
-        float camX =
-                cameraTarget.x +
+        float camX = cameraTarget.x +
                 horizontalDistance * (float) Math.sin(yaw);
 
-        float camZ =
-                cameraTarget.z +
+        float camZ = cameraTarget.z +
                 horizontalDistance * (float) Math.cos(yaw);
 
-        float camY =
-                cameraTarget.y + verticalDistance;
+        float camY = cameraTarget.y + verticalDistance;
 
         camera.position.set(camX, camY, camZ);
 
@@ -144,12 +137,10 @@ public class KeitaCity extends ApplicationAdapter {
         float delta = Gdx.graphics.getDeltaTime();
         float speed = CAMERA_SPEED * delta;
 
-        boolean shift =
-                Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) ||
+        boolean shift = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) ||
                 Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
-        boolean ctrl =
-                Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) ||
+        boolean ctrl = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) ||
                 Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
 
         if (shift) {
@@ -225,6 +216,10 @@ public class KeitaCity extends ApplicationAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.X)) {
             currentTool = BuildTool.DEMOLISH;
         }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.T)) {
+            currentTool = BuildTool.ROAD;
+        }
     }
 
     private void handleClick(int screenX, int screenY) {
@@ -247,31 +242,29 @@ public class KeitaCity extends ApplicationAdapter {
                 world.zoning.zone(
                         gridX,
                         gridY,
-                        ZoneType.RESIDENTIAL
-                );
+                        ZoneType.RESIDENTIAL);
                 break;
 
             case COMMERCIAL:
                 world.zoning.zone(
                         gridX,
                         gridY,
-                        ZoneType.COMMERCIAL
-                );
+                        ZoneType.COMMERCIAL);
                 break;
 
             case INDUSTRIAL:
                 world.zoning.zone(
                         gridX,
                         gridY,
-                        ZoneType.INDUSTRIAL
-                );
+                        ZoneType.INDUSTRIAL);
+                break;
+
+            case ROAD:
+                world.buildRoad(gridX, gridY);
                 break;
 
             case DEMOLISH:
-                world.zoning.removeZone(
-                        gridX,
-                        gridY
-                );
+                world.demolish(gridX, gridY);
                 break;
 
             default:

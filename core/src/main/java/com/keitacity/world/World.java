@@ -12,47 +12,32 @@ public class World {
     public final Grid grid;
     public final List<Citizen> citizens = new ArrayList<>();
     public final List<Building> buildings = new ArrayList<>();
+
     public float delta;
 
     public final ZoningSystem zoning;
 
-    /*
-     * Tempo acumulado para crescimento
-     * das zonas.
-     */
     private float growthTimer = 0f;
 
-    /*
-     * Tempo necessário para tentar
-     * construir uma nova casa.
-     */
     private static final float GROWTH_INTERVAL = 3f;
 
     public World(int width, int height) {
+        grid = new Grid(width, height);
+        zoning = new ZoningSystem(this);
 
-        this.grid = new Grid(width, height);
-
-        this.zoning = new ZoningSystem(this);
         citizens.add(new Citizen(width / 2, height / 2));
     }
 
     public void update() {
-
         delta = Gdx.graphics.getDeltaTime();
 
-        for (Citizen c : citizens) {
-            c.update(this);
+        for (Citizen citizen : citizens) {
+            citizen.update(this);
         }
 
         updateGrowth();
     }
 
-    /**
-     * Sistema simples de crescimento urbano.
-     *
-     * Procura zonas residenciais livres
-     * e constrói automaticamente.
-     */
     private void updateGrowth() {
 
         growthTimer += delta;
@@ -63,51 +48,51 @@ public class World {
 
         growthTimer = 0f;
 
-        growZones();
-    }
-
-    private void growZones() {
-
         for (int x = 0; x < grid.width; x++) {
-
             for (int y = 0; y < grid.height; y++) {
 
                 Tile tile = grid.tiles[x][y];
 
-                /*
-                 * Não construir onde já existe
-                 * alguma coisa.
-                 */
                 if (tile.isOccupied()) {
                     continue;
                 }
 
-                ZoneType zone = tile.getZone();
-
-                // Só construir em zonas residenciais, comerciais ou industriais.
-                if (zone == ZoneType.NONE) { 
-                    continue; 
+                if (tile.isRoad()) {
+                    continue;
                 }
 
-                /*
-                 * Constrói automaticamente de acordo com o tipo da zona.
-                 */
-                placeBuilding( x, y, zone );
+                if (tile.getZone() == ZoneType.NONE) {
+                    continue;
+                }
 
-                /*
-                 * Apenas uma construção por ciclo.
-                 */
+                placeBuilding(x, y, tile.getZone());
                 return;
             }
         }
     }
 
-    /**
-     * Cria uma construção.
-     */
-    public boolean placeBuilding( int x, int y,ZoneType type) {
+    public boolean placeBuilding(int x, int y, ZoneType type) {
 
-        if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) {
+        if (!grid.isInside(x, y)) {
+            return false;
+        }
+
+        Tile tile = grid.tiles[x][y];
+
+        if (tile.isOccupied() || tile.isRoad()) {
+            return false;
+        }
+
+        tile.setOccupied(true);
+
+        buildings.add(new Building(x, y, type));
+
+        return true;
+    }
+
+    public boolean buildRoad(int x, int y) {
+
+        if (!grid.isInside(x, y)) {
             return false;
         }
 
@@ -117,23 +102,42 @@ public class World {
             return false;
         }
 
-        tile.setOccupied(true);
+        tile.setZone(ZoneType.NONE);
+        tile.setType(TileType.ROAD);
 
-        buildings.add(new Building(x, y,type));
+        return true;
+    }
 
-        System.out.println("Construcao automatica: " + type + " em "
-                + x + ", " + y);
+    public boolean demolish(int x, int y) {
+
+        if (!grid.isInside(x, y)) {
+            return false;
+        }
+
+        Tile tile = grid.tiles[x][y];
+
+        if (tile.isOccupied()) {
+
+            buildings.removeIf(building ->
+                    building.x == x && building.y == y);
+
+            tile.setOccupied(false);
+        }
+
+        tile.setZone(ZoneType.NONE);
+        tile.setType(TileType.GRASS);
 
         return true;
     }
 
     public boolean isWalkable(int x, int y) {
 
-        if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) {
+        if (!grid.isInside(x, y)) {
             return false;
         }
 
-        return !grid.tiles[x][y].isOccupied();
+        Tile tile = grid.tiles[x][y];
+
+        return !tile.isOccupied();
     }
 }
-

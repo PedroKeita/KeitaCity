@@ -44,6 +44,7 @@ public class WorldRenderer {
         private final Model commercialBuildingModel;
         private final Model industrialBuildingModel;
         private final Model citizenModel;
+        private final Model roadModel;
 
         private final Model residentialZoneModel;
         private final Model commercialZoneModel;
@@ -59,6 +60,8 @@ public class WorldRenderer {
         private final List<ModelInstance> citizenInstances = new ArrayList<>();
 
         private final List<ModelInstance> zoneInstances = new ArrayList<>();
+
+        private final List<ModelInstance> roadInstances = new ArrayList<>();
 
         /*
          * Espaçamento entre tiles no mundo 3D.
@@ -114,7 +117,9 @@ public class WorldRenderer {
                  * Sem arquivos .obj — tudo em código.
                  */
                 groundModel = VoxelMeshBuilder.createCube(VoxelPalette.GRASS);
-                
+
+                roadModel = VoxelMeshBuilder.createCube(VoxelPalette.ROAD);
+
                 residentialBuildingModel = VoxelMeshBuilder.createCube(VoxelPalette.BUILDING_RESIDENTIAL);
 
                 commercialBuildingModel = VoxelMeshBuilder.createCube(VoxelPalette.BUILDING_COMMERCIAL);
@@ -170,7 +175,7 @@ public class WorldRenderer {
 
                 updateBuildings();
                 updateCitizens();
-
+                updateRoads();
                 updateZones();
 
                 modelBatch.begin(camera);
@@ -182,6 +187,8 @@ public class WorldRenderer {
                 for (ModelInstance i : citizenInstances)
                         modelBatch.render(i, environment);
                 for (ModelInstance i : zoneInstances)
+                        modelBatch.render(i, environment);
+                for (ModelInstance i : roadInstances)
                         modelBatch.render(i, environment);
 
                 modelBatch.end();
@@ -326,9 +333,38 @@ public class WorldRenderer {
                 }
         }
 
+        private void updateRoads() {
+
+                roadInstances.clear();
+
+                for (int x = 0; x < world.grid.width; x++) {
+                        for (int y = 0; y < world.grid.height; y++) {
+
+                                if (!world.grid.tiles[x][y].isRoad()) {
+                                        continue;
+                                }
+
+                                ModelInstance instance = new ModelInstance(roadModel);
+
+                                instance.transform
+                                                .setToTranslation(
+                                                                x * TILE_SIZE,
+                                                                0.14f,
+                                                                y * TILE_SIZE)
+                                                .scale(
+                                                                TILE_SIZE,
+                                                                0.08f,
+                                                                TILE_SIZE);
+
+                                roadInstances.add(instance);
+                        }
+                }
+        }
+
         public void dispose() {
                 modelBatch.dispose();
                 groundModel.dispose();
+                roadModel.dispose();
                 residentialBuildingModel.dispose();
                 commercialBuildingModel.dispose();
                 industrialBuildingModel.dispose();
