@@ -8,8 +8,9 @@ import java.util.List;
 public class Citizen extends Entity {
 
     private static final Random random = new Random();
-    private float moveTimer = 0f;
-    private static final float MOVE_INTERVAL = 0.5f;
+    private float moveSpeed = 2f;
+    private float targetPosX;
+    private float targetPosY;
 
     private int targetX;
     private int targetY;
@@ -25,45 +26,69 @@ public class Citizen extends Entity {
 
     @Override
     public void update(World world) {
-        moveTimer += world.delta;
 
-        if (moveTimer >= MOVE_INTERVAL) {
-            moveTimer = 0f;
-            tryMove(world);
+        if (!hasTarget) {
+            chooseTarget(world);
+            return;
+        }
+
+        move(world);
+    }
+
+    private void chooseTarget(World world) {
+
+        targetX = random.nextInt(world.grid.width);
+        targetY = random.nextInt(world.grid.height);
+
+        path = Pathfinder.findPath(
+                world,
+                Math.round(x),
+                Math.round(y),
+                targetX,
+                targetY);
+
+        pathIndex = 0;
+
+        if (!path.isEmpty()) {
+            targetPosX = path.get(0)[0];
+            targetPosY = path.get(0)[1];
+            hasTarget = true;
         }
     }
 
-    private void tryMove(World world) {
+    private void move(World world) {
 
-        if (!hasTarget) {
-            targetX = random.nextInt(world.grid.width);
-            targetY = random.nextInt(world.grid.height);
-            hasTarget = true;
-            path = Pathfinder.findPath(
-                    world,
-                    (int) x,
-                    (int) y,
-                    targetX,
-                    targetY);
-            pathIndex = 0;
-        }
+        float dx = targetPosX - x;
+        float dy = targetPosY - y;
 
-        if (pathIndex >= path.size()) {
-            hasTarget = false;
-            return;
-        }
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-        int[] next = path.get(pathIndex);
+        if (distance < 0.05f) {
 
-        if (world.isWalkable(next[0], next[1])) {
-            x = next[0];
-            y = next[1];
+            x = targetPosX;
+            y = targetPosY;
+
             pathIndex++;
+
+            if (pathIndex >= path.size()) {
+                hasTarget = false;
+                return;
+            }
+
+            targetPosX = path.get(pathIndex)[0];
+            targetPosY = path.get(pathIndex)[1];
+
             return;
         }
 
-        hasTarget = false;
-        path.clear();
+        float amount = moveSpeed * world.delta;
+
+        if (amount > distance) {
+            amount = distance;
+        }
+
+        x += dx / distance * amount;
+        y += dy / distance * amount;
     }
 
     public int getTargetX() {
