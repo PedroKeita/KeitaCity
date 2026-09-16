@@ -28,8 +28,7 @@ public class Pathfinder {
             int targetY) {
 
         PriorityQueue<Node> open = new PriorityQueue<>(
-                Comparator.comparingInt(n -> n.priority)
-        );
+                Comparator.comparingInt(n -> n.priority));
 
         Set<String> visited = new HashSet<>();
 
@@ -38,18 +37,18 @@ public class Pathfinder {
                 startY,
                 0,
                 distance(startX, startY, targetX, targetY),
-                null
-        ));
+                null));
 
-        int[] dx = {1, -1, 0, 0};
-        int[] dy = {0, 0, 1, -1};
+        int[] dx = { 1, -1, 0, 0 };
+        int[] dy = { 0, 0, 1, -1 };
 
         while (!open.isEmpty()) {
 
             Node current = open.poll();
             String key = current.x + "," + current.y;
 
-            if (visited.contains(key)) continue;
+            if (visited.contains(key))
+                continue;
             visited.add(key);
 
             if (current.x == targetX && current.y == targetY) {
@@ -61,11 +60,15 @@ public class Pathfinder {
                 int nextX = current.x + dx[i];
                 int nextY = current.y + dy[i];
 
-                if (!world.isWalkable(nextX, nextY)) continue;
+                if (!world.isWalkable(nextX, nextY)
+                        && !(nextX == targetX && nextY == targetY)) {
+                    continue;
+                }
 
                 String nextKey = nextX + "," + nextY;
 
-                if (visited.contains(nextKey)) continue;
+                if (visited.contains(nextKey))
+                    continue;
 
                 int cost = current.cost + 1;
                 int priority = cost +
@@ -76,8 +79,7 @@ public class Pathfinder {
                         nextY,
                         cost,
                         priority,
-                        current
-                ));
+                        current));
             }
         }
 
@@ -99,7 +101,7 @@ public class Pathfinder {
         List<int[]> path = new ArrayList<>();
 
         while (node != null) {
-            path.add(new int[]{node.x, node.y});
+            path.add(new int[] { node.x, node.y });
             node = node.parent;
         }
 

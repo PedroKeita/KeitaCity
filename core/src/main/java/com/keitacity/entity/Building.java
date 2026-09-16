@@ -13,11 +13,14 @@ public class Building {
     // Por enquanto toda construção começa no nível 1.
     public int level;
 
+    public int residents;
+
     public Building(int x, int y, ZoneType type) {
         this.x = x;
         this.y = y;
         this.type = type;
         this.level = 1;
+        this.residents = 0;
     }
 }
 

@@ -24,8 +24,6 @@ public class World {
     public World(int width, int height) {
         grid = new Grid(width, height);
         zoning = new ZoningSystem(this);
-
-        citizens.add(new Citizen(width / 2, height / 2));
     }
 
     public void update() {
@@ -87,6 +85,10 @@ public class World {
 
         buildings.add(new Building(x, y, type));
 
+        if (type == ZoneType.RESIDENTIAL) {
+            spawnCitizen(x, y);
+        }
+
         return true;
     }
 
@@ -118,8 +120,7 @@ public class World {
 
         if (tile.isOccupied()) {
 
-            buildings.removeIf(building ->
-                    building.x == x && building.y == y);
+            buildings.removeIf(building -> building.x == x && building.y == y);
 
             tile.setOccupied(false);
         }
@@ -140,4 +141,44 @@ public class World {
 
         return !tile.isOccupied();
     }
+
+    public Building findAvailableHome() {
+
+        for (Building building : buildings) {
+
+            if (building.type != ZoneType.RESIDENTIAL)
+                continue;
+            if (building.residents >= 4)
+                continue;
+
+            return building;
+        }
+
+        return null;
+    }
+
+    private void assignHome() {
+
+        for (Citizen citizen : citizens) {
+
+            if (citizen.hasHome())
+                continue;
+
+            Building home = findAvailableHome();
+
+            if (home == null)
+                return;
+
+            citizen.setHome(home.x, home.y);
+            home.residents++;
+        }
+    }
+
+    private void spawnCitizen(int x, int y) {
+
+    Citizen citizen = new Citizen(x, y);
+    citizen.setHome(x, y);
+
+    citizens.add(citizen);
+}
 }
