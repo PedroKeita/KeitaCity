@@ -14,6 +14,10 @@ public class Building {
     public int level;
 
     public int residents;
+    public int maxResidents;
+
+    public int workers;
+    public int maxWorkers;
 
     public Building(int x, int y, ZoneType type) {
         this.x = x;
@@ -21,6 +25,8 @@ public class Building {
         this.type = type;
         this.level = 1;
         this.residents = 0;
+        this.workers = 0;
+        this.maxWorkers = type == ZoneType.RESIDENTIAL ? 0 : 4;
+        this.maxResidents = type == ZoneType.RESIDENTIAL ? 4 : 0;
     }
 }
-

@@ -86,7 +86,7 @@ public class World {
         buildings.add(new Building(x, y, type));
 
         if (type == ZoneType.RESIDENTIAL) {
-            spawnCitizen(x, y);
+            spawnCitizens(x, y);
         }
 
         return true;
@@ -174,11 +174,17 @@ public class World {
         }
     }
 
-    private void spawnCitizen(int x, int y) {
+    private void spawnCitizens(int x, int y) {
 
-    Citizen citizen = new Citizen(x, y);
-    citizen.setHome(x, y);
+        Building home = buildings.get(buildings.size() - 1);
 
-    citizens.add(citizen);
-}
+        for (int i = 0; i < home.maxResidents; i++) {
+
+            Citizen citizen = new Citizen(x, y);
+            citizen.setHome(x, y);
+
+            citizens.add(citizen);
+            home.residents++;
+        }
+    }
 }

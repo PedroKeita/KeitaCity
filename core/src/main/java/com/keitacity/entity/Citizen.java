@@ -31,6 +31,9 @@ public class Citizen extends Entity {
     private int homeX = -1;
     private int homeY = -1;
 
+    private Building workplace;
+    private boolean employed = false;
+
     public Citizen(int startX, int startY) {
         this.x = startX;
         this.y = startY;
@@ -49,17 +52,17 @@ public class Citizen extends Entity {
 
     private void chooseTarget(World world) {
 
-        if (activity == Activity.HOME) {
-
-            Building work = findWork(world);
-
-            if (work == null) {
+        if (!employed) {
+            if (!findWorkplace(world)) {
                 chooseRandomTarget(world);
                 return;
             }
+        }
 
-            targetX = work.x;
-            targetY = work.y;
+        if (activity == Activity.HOME) {
+
+            targetX = workplace.x;
+            targetY = workplace.y;
             activity = Activity.WORK;
             createPath(world);
             return;
@@ -189,6 +192,35 @@ public class Citizen extends Entity {
         return options.get(random.nextInt(options.size()));
     }
 
+    private boolean findWorkplace(World world) {
+
+        List<Building> options = new java.util.ArrayList<>();
+
+        for (Building building : world.buildings) {
+
+            if (building.type != ZoneType.COMMERCIAL &&
+                    building.type != ZoneType.INDUSTRIAL) {
+                continue;
+            }
+
+            if (building.workers >= building.maxWorkers) {
+                continue;
+            }
+
+            options.add(building);
+        }
+
+        if (options.isEmpty()) {
+            return false;
+        }
+
+        workplace = options.get(random.nextInt(options.size()));
+        workplace.workers++;
+        employed = true;
+
+        return true;
+    }
+
     public int getTargetX() {
         return targetX;
     }
@@ -220,5 +252,13 @@ public class Citizen extends Entity {
 
     public boolean hasHome() {
         return homeX >= 0 && homeY >= 0;
+    }
+
+    public boolean isEmployed() {
+        return employed;
+    }
+
+    public Building getWorkplace() {
+        return workplace;
     }
 }
