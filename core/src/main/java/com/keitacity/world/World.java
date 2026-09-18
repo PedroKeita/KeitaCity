@@ -27,6 +27,8 @@ public class World {
     }
 
     public void update() {
+        // O mundo controla a ordem da simulacao: primeiro os agentes se movem,
+        // depois o crescimento pode alterar a cidade para o proximo frame.
         delta = Gdx.graphics.getDeltaTime();
 
         for (Citizen citizen : citizens) {
@@ -46,6 +48,9 @@ public class World {
 
         growthTimer = 0f;
 
+        // Por enquanto o crescimento e deterministico: o primeiro lote valido
+        // encontrado e ocupado a cada intervalo. Uma futura politica de demanda
+        // pode substituir apenas este metodo sem mexer na construcao manual.
         for (int x = 0; x < grid.width; x++) {
             for (int y = 0; y < grid.height; y++) {
 
@@ -83,10 +88,11 @@ public class World {
 
         tile.setOccupied(true);
 
-        buildings.add(new Building(x, y, type));
+        Building building = new Building(x, y, type);
+        buildings.add(building);
 
         if (type == ZoneType.RESIDENTIAL) {
-            spawnCitizens(x, y);
+            spawnCitizens(building);
         }
 
         return true;
@@ -122,6 +128,9 @@ public class World {
 
             buildings.removeIf(building -> building.x == x && building.y == y);
 
+            citizens.removeIf(citizen -> citizen.getHomeX() == x &&
+                    citizen.getHomeY() == y);
+
             tile.setOccupied(false);
         }
 
@@ -142,46 +151,12 @@ public class World {
         return !tile.isOccupied();
     }
 
-    public Building findAvailableHome() {
-
-        for (Building building : buildings) {
-
-            if (building.type != ZoneType.RESIDENTIAL)
-                continue;
-            if (building.residents >= 4)
-                continue;
-
-            return building;
-        }
-
-        return null;
-    }
-
-    private void assignHome() {
-
-        for (Citizen citizen : citizens) {
-
-            if (citizen.hasHome())
-                continue;
-
-            Building home = findAvailableHome();
-
-            if (home == null)
-                return;
-
-            citizen.setHome(home.x, home.y);
-            home.residents++;
-        }
-    }
-
-    private void spawnCitizens(int x, int y) {
-
-        Building home = buildings.get(buildings.size() - 1);
+    private void spawnCitizens(Building home) {
 
         for (int i = 0; i < home.maxResidents; i++) {
 
-            Citizen citizen = new Citizen(x, y);
-            citizen.setHome(x, y);
+            Citizen citizen = new Citizen(home.x, home.y);
+            citizen.setHome(home.x, home.y);
 
             citizens.add(citizen);
             home.residents++;

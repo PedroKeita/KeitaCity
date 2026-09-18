@@ -19,10 +19,14 @@ public class Grid {
     }
 
     public boolean isInside(int x, int y) {
+        // Mantem a validacao de limites em um unico lugar para evitar acessos
+        // invalidos ao array durante cliques, movimento e pathfinding.
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
     public Tile getTile(int x, int y) {
+        // O chamador deve usar isInside antes deste acesso; aqui nao duplicamos
+        // a validacao para manter o acesso simples nos loops internos.
         return tiles[x][y];
     }
 }

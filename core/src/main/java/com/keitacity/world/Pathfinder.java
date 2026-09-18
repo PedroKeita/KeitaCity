@@ -27,6 +27,9 @@ public class Pathfinder {
             int targetX,
             int targetY) {
 
+        // A busca A* usa a distancia Manhattan como heuristica, adequada para
+        // movimentos em quatro direcoes e sem diagonais neste mapa.
+
         PriorityQueue<Node> open = new PriorityQueue<>(
                 Comparator.comparingInt(n -> n.priority));
 
@@ -70,7 +73,12 @@ public class Pathfinder {
                 if (visited.contains(nextKey))
                     continue;
 
-                int cost = current.cost + 1;
+                int cost = current.cost + 5;
+
+                if (world.grid.tiles[nextX][nextY].isRoad()) {
+                    cost = current.cost + 1;
+                }
+
                 int priority = cost +
                         distance(nextX, nextY, targetX, targetY);
 
